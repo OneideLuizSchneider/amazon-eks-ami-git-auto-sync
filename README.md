@@ -6,4 +6,4 @@
 ## What does it?
 
 - It will get all the changes from the official repo <https://github.com/awslabs/amazon-eks-ami> and create a PR with last changes.
-And every day it will run once to see if there are new changes.
+- Every day it will run `automatically` once to see if there are new changes.
