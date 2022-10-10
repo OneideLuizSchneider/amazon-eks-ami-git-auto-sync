@@ -35,11 +35,13 @@ jobs:
           git remote update               
           git fetch
           if git ls-remote --heads origin ${{ steps.get-new-branch.outputs.branch }}; then
+            echo "Exists..."
             git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}
 
             git rebase main
             git push
           else  
+            echo "Does not Exists..."
             git checkout -b ${{ steps.get-new-branch.outputs.branch }}            
           fi
 
