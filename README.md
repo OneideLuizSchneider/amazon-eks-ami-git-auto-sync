@@ -7,3 +7,5 @@
 
 - It will get all the changes from the official repo <https://github.com/awslabs/amazon-eks-ami> and create a PR with last changes.
 - Every day it will run `automatically` once to see if there are new changes.
+
+
