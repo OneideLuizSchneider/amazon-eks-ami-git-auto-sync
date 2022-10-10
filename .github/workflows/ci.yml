@@ -39,9 +39,7 @@ jobs:
           else  
             git checkout -b ${{ steps.get-new-branch.outputs.branch }}
 
-            git rebase main
-            git add .
-            git commit -am "Auto Rebase Commit - CI build" || echo "No changes to commit"
+            git rebase ${{ steps.get-new-branch.outputs.branch }} main
             git push
           fi
 
