@@ -34,13 +34,13 @@ jobs:
         run: |
           git remote update               
           git fetch
-          if git show-ref -q --heads ${{ steps.get-new-branch.outputs.branch }}; then
+          if git ls-remote --heads origin ${{ steps.get-new-branch.outputs.branch }}; then
             git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}
-          else  
-            git checkout -b ${{ steps.get-new-branch.outputs.branch }}
 
             git rebase main
             git push
+          else  
+            git checkout -b ${{ steps.get-new-branch.outputs.branch }}            
           fi
 
       - name: Apply new changes
