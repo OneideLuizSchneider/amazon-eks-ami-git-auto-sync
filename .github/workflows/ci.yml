@@ -53,7 +53,6 @@ jobs:
       - name: Create PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run:  |
-          ##git request-pull ${{ steps.get-new-branch.outputs.branch }} https://github.com/OneideLuizSchneider/amazon-eks-ami-git-auto-sync.git main
-          gh pr create
+        run:  |          
+          gh pr create --title "New AMI version for EKS" --body "New version, auto-PR"
         
