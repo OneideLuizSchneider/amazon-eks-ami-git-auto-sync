@@ -33,6 +33,7 @@ jobs:
       - name: Git new Branch
         run: |
           git fetch --all
+          git pull --all
           git branch ${{ steps.get-new-branch.outputs.branch }}
           git checkout ${{ steps.get-new-branch.outputs.branch }}
 
