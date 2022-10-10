@@ -1,0 +1,1 @@
+# amazon-eks-ami-git-auto-sync
