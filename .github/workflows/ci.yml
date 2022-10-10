@@ -16,6 +16,7 @@ jobs:
         run: |
           git config --global user.email "bot@githubactions.com"
           git config --global user.name "bot"
+          git config --global push.autoSetupRemote true
 
       - id: get-sha
         run: |
