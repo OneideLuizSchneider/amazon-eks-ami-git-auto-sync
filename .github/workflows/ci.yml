@@ -37,7 +37,7 @@ jobs:
           if git ls-remote --heads origin ${{ steps.get-new-branch.outputs.branch }}; then
             git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}
 
-            git merge --no-edit main
+            git rebase main
             git push
           else  
             git checkout -b ${{ steps.get-new-branch.outputs.branch }}            
@@ -45,7 +45,6 @@ jobs:
 
       - name: Apply new changes
         run: |
-          ##
           wget -O new-amazon-eks-ami-master.zip "https://github.com/awslabs/amazon-eks-ami/archive/refs/heads/master.zip"
           unzip new-amazon-eks-ami-master.zip
 
