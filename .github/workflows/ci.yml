@@ -34,8 +34,13 @@ jobs:
         run: |
           git remote update               
           git fetch
-          if git show-ref -q --heads ${{ steps.get-new-branch.outputs.branch }}; then            
+          if git show-ref -q --heads ${{ steps.get-new-branch.outputs.branch }}; then
             git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}
+
+            git rebase main
+            git add .
+            git commit -am "auto commit - CI build" || echo "No changes to commit"
+            git push
           else  
             git checkout -b ${{ steps.get-new-branch.outputs.branch }}
           fi
