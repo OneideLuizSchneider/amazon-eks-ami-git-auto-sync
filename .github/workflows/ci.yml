@@ -34,7 +34,11 @@ jobs:
         run: |
           git remote update               
           git fetch
-          git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}          
+          if git show-ref -q --heads ${{ steps.get-new-branch.outputs.branch }}; then
+            git checkout -b ${{ steps.get-new-branch.outputs.branch }}
+          else  
+            git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}
+          fi
 
       - name: Apply new changes
         run: |
