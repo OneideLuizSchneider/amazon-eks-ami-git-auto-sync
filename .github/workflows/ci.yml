@@ -43,6 +43,13 @@ jobs:
 
           rsync -av ./amazon-eks-ami-master/ ./amazon-eks-ami/
           rm -rf ./amazon-eks-ami-master/
+
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "there are changes, It will create a PR on the next step!";
+          else
+            echo "Game over!"
+            exit 1
+          fi
           
       - name: Commit changes
         run: |
