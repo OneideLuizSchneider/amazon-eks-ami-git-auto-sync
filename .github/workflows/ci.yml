@@ -1,0 +1,55 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Git Global Conf
+        run: |
+          git config --global user.email "bot@githubactions.com"
+          git config --global user.name "bot"
+
+      - id: get-sha
+        run: |
+          echo ::set-output name=sha::$(git log -1 --pretty=format:"%H")
+      
+      - id: get-new-branch
+        run: |
+          DATE_BRANCH=$(date +"%m-%d-%y")
+          echo ::set-output name=branch::$(echo new-ami-release-${DATE_BRANCH})
+
+      - name: Git new Branch
+        run: |
+          DATE_BRANCH=$(date +"%m-%d-%y")
+          git branch ${{ steps.get-new-branch.outputs.branch }}
+          git checkout ${{ steps.get-new-branch.outputs.branch }}
+
+      - name: Apply new changes
+        run: |
+          ##
+          wget -O new-amazon-eks-ami-master.zip "https://github.com/awslabs/amazon-eks-ami/archive/refs/heads/master.zip"
+          unzip new-amazon-eks-ami-master.zip
+
+          rm -rf ./new-amazon-eks-ami-master.zip 
+          rm -rf ./amazon-eks-ami-master/.git
+
+          rsync -av ./amazon-eks-ami-master/ ./amazon-eks-ami/
+          rm -rf ./amazon-eks-ami-master/
+          
+      - name: Commit changes
+        run: |
+          git add .
+          git commit -m "auto commit"
+          git push
+
+      - name: Create PR
+        run:  |
+          git request-pull ${{ steps.get-new-branch.outputs.branch }} main
