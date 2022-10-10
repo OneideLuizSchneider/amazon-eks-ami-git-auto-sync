@@ -39,7 +39,7 @@ jobs:
           else  
             git checkout -b ${{ steps.get-new-branch.outputs.branch }}
 
-            git rebase ${{ steps.get-new-branch.outputs.branch }} main
+            git rebase main
             git push
           fi
 
