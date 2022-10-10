@@ -27,11 +27,12 @@ jobs:
       
       - id: get-new-branch
         run: |
-          DATE_BRANCH=$(date +"%m-%d-%y")-${{ steps.get-sha.outputs.sha }}
+          DATE_BRANCH=$(date +"%m-%d-%y")
           echo ::set-output name=branch::$(echo feature/new-ami-release-${DATE_BRANCH})
 
       - name: Git new Branch
         run: |
+          git fetch --all
           git branch ${{ steps.get-new-branch.outputs.branch }}
           git checkout ${{ steps.get-new-branch.outputs.branch }}
 
