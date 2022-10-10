@@ -32,10 +32,9 @@ jobs:
 
       - name: Git new Branch
         run: |
-          if git show-ref -q --heads ${{ steps.get-new-branch.outputs.branch }}; then
-            git branch ${{ steps.get-new-branch.outputs.branch }}
-          fi          
-          git checkout ${{ steps.get-new-branch.outputs.branch }}
+          git remote update               
+          git fetch
+          git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}          
 
       - name: Apply new changes
         run: |
