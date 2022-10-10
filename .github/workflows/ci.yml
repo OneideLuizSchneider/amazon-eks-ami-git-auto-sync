@@ -37,7 +37,7 @@ jobs:
           if git ls-remote --heads origin ${{ steps.get-new-branch.outputs.branch }}; then
             git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}
 
-            git rebase main --continue
+            git rebase --continue main
             git push
           else  
             git checkout -b ${{ steps.get-new-branch.outputs.branch }}            
