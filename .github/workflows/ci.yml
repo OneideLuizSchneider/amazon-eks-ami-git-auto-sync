@@ -53,4 +53,4 @@ jobs:
       - name: Create PR
         run:  |
           ##git request-pull ${{ steps.get-new-branch.outputs.branch }} https://github.com/OneideLuizSchneider/amazon-eks-ami-git-auto-sync.git main
-          hub pull-request
+          gh pr create
