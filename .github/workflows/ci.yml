@@ -35,12 +35,13 @@ jobs:
           git fetch --all
           exists=`git ls-remote --heads origin ${{ steps.get-new-branch.outputs.branch }};`
           if [ -n "$exists" ]; then
-            echo "Branch " + ${{ steps.get-new-branch.outputs.branch }} + " Exists..."
+            echo "Branch ${{ steps.get-new-branch.outputs.branch }} Exists..."
             git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}
 
-            git rebase main
+            git add .
+            git commit -am "Auto commit - CI build" || echo "No changes to commit"
             git push
-          else  
+          else
             echo "Branch " + ${{ steps.get-new-branch.outputs.branch }} + " Does not Exists..."
             git checkout -b ${{ steps.get-new-branch.outputs.branch }}            
           fi
