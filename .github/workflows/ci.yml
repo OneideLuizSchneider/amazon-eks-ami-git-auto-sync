@@ -38,6 +38,7 @@ jobs:
             echo "Branch ${{ steps.get-new-branch.outputs.branch }} Exists..."
             git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}
 
+            git rebase main
             git add .
             git commit -am "Auto commit - CI build" || echo "No changes to commit"
             git push
