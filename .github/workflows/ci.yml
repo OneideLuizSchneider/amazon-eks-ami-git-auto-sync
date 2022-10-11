@@ -37,11 +37,9 @@ jobs:
           if [ -n "$exists" ]; then
             echo "Branch ${{ steps.get-new-branch.outputs.branch }} Exists..."
             git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}
-
+            git checkout ${{ steps.get-new-branch.outputs.branch }}
             git rebase main
-            git add .
-            git commit -am "Auto commit - CI build" || echo "No changes to commit"
-            git push
+            git push --force origin ts            
           else
             echo "Branch " + ${{ steps.get-new-branch.outputs.branch }} + " Does not Exists..."
             git checkout -b ${{ steps.get-new-branch.outputs.branch }}            
