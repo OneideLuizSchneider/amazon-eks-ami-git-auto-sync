@@ -36,12 +36,7 @@ jobs:
           exists=`git ls-remote --heads origin ${{ steps.get-new-branch.outputs.branch }};`
           if [ -n "$exists" ]; then
             echo "Branch ${{ steps.get-new-branch.outputs.branch }} Exists..."
-            git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}
-                        
-            git rebase main
-            git add .
-            git rebase --continue
-            git push --force origin ts            
+            git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}          
           else
             echo "Branch " + ${{ steps.get-new-branch.outputs.branch }} + " Does not Exists..."
             git checkout -b ${{ steps.get-new-branch.outputs.branch }}            
