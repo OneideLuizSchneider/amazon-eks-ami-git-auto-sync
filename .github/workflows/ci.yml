@@ -44,7 +44,7 @@ jobs:
             echo "Branch " + ${{ steps.get-new-branch.outputs.branch }} + " Does not Exists..."
             git checkout -b ${{ steps.get-new-branch.outputs.branch }}            
           fi
-          
+
       - name: Apply new changes
         run: |
           wget -O new-amazon-eks-ami-master.zip "https://github.com/awslabs/amazon-eks-ami/archive/refs/heads/master.zip"
@@ -55,27 +55,21 @@ jobs:
 
           rsync -av ./amazon-eks-ami-master/ ./amazon-eks-ami/
           rm -rf ./amazon-eks-ami-master/
-
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "there are changes, It will create a PR on the next step!";
-          else
-            echo "###################################################"
-            echo "######## Game over! ###############################"            
-            echo "###################################################"
-          fi
           
       - name: Commit changes
         run: |
-          git add .
-          git commit -am "Auto commit - CI build" || echo "No changes to commit"
-          git push
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -am "Auto commit - CI build" || echo "No changes to commit"
+            git push
+          fi
 
-      - name: Create PR
+      - name: Create a Github PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run:  |
           if [ -n "$(git status --porcelain)" ]; then
-            gh pr create --title "New AMI version for EKS" --body "New version, auto-PR"
+            gh pr create --title "New AMI version for EKS - Auto-PR" --body "New version, EKS AMI releases on <https://github.com/awslabs/amazon-eks-ami/releases/>"
           else
             echo "###################################################"
             echo "######## No PR! ###################################"            
