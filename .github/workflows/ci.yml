@@ -32,19 +32,19 @@ jobs:
 
       - name: Git new Branch
         run: |
-          git remote update               
-          git fetch
-          if git ls-remote --heads origin ${{ steps.get-new-branch.outputs.branch }}; then
-            echo "Exists..."
+          git fetch --all
+          exists=`git ls-remote --heads origin ${{ steps.get-new-branch.outputs.branch }};`
+          if [ -n "$exists" ]; then
+            echo "Branch " + ${{ steps.get-new-branch.outputs.branch }} + " Exists..."
             git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}
 
             git rebase main
             git push
           else  
-            echo "Does not Exists..."
+            echo "Branch " + ${{ steps.get-new-branch.outputs.branch }} + " Does not Exists..."
             git checkout -b ${{ steps.get-new-branch.outputs.branch }}            
           fi
-
+          
       - name: Apply new changes
         run: |
           wget -O new-amazon-eks-ami-master.zip "https://github.com/awslabs/amazon-eks-ami/archive/refs/heads/master.zip"
