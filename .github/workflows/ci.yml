@@ -51,6 +51,7 @@ jobs:
           rm -rf ./amazon-eks-ami-master/.git
 
           rsync -av ./amazon-eks-ami-master/ ./amazon-eks-ami/
+          
           rm -rf ./amazon-eks-ami-master/
           
       - name: Commit changes
