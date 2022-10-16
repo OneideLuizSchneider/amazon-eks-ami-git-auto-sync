@@ -54,11 +54,17 @@ jobs:
           
           rm -rf ./amazon-eks-ami-master/
           
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "new_git_changes=yes" >> $GITHUB_ENV
+          else
+            echo "new_git_changes=no" >> $GITHUB_ENV
+          fi
+          
       - name: Commit changes
         run: |
-          if [ -n "$(git status --porcelain)" ]; then
+          if [ ${{ env.new_git_changes }} == 'yes' ]; then
             git add .
-            git commit -am "Auto commit - CI build" || echo "No changes to commit"
+            git commit -am "Auto commit - CI build"
             git push
           fi
 
@@ -66,11 +72,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run:  |
-          if [ -n "$(git status --porcelain)" ]; then
+          if [ ${{ env.new_git_changes }} == 'yes' ]; then
             gh pr create --title "New AMI version for EKS - Auto-PR" --body "New version, EKS AMI releases on <https://github.com/awslabs/amazon-eks-ami/releases/>"
           else
-            echo "###################################################"
-            echo "######## No PR! ###################################"            
-            echo "###################################################"
+            echo "######## No Changes! ##############################"
           fi
         
