@@ -26,13 +26,18 @@ ifeq ($(call vercmp,$(kubernetes_version),gteq,1.25.0), true)
 	ami_component_description ?= (k8s: {{ user `kubernetes_version` }}, containerd: {{ user `containerd_version` }})
 endif
 
+OS=
+ifneq (,$(findstring al2023, $(PACKER_TEMPLATE_FILE)))
+	OS=-al2023
+endif
+
 arch ?= x86_64
 ifeq ($(arch), arm64)
 	instance_type ?= m6g.large
-	ami_name ?= amazon-eks-arm64-node-$(K8S_VERSION_MINOR)-v$(shell date +'%Y%m%d')
+	ami_name ?= amazon-eks-arm64-node$(OS)-$(K8S_VERSION_MINOR)-v$(shell date +'%Y%m%d')
 else
 	instance_type ?= m5.large
-	ami_name ?= amazon-eks-node-$(K8S_VERSION_MINOR)-v$(shell date +'%Y%m%d')
+	ami_name ?= amazon-eks-node$(OS)-$(K8S_VERSION_MINOR)-v$(shell date +'%Y%m%d')
 endif
 
 ifeq ($(aws_region), cn-northwest-1)
@@ -74,6 +79,12 @@ ifeq (, $(SHELLCHECK_COMMAND))
 endif
 SHELL_FILES := $(shell find $(MAKEFILE_DIR) -type f -name '*.sh')
 
+.PHONY: transform-al2-to-al2023
+transform-al2-to-al2023:
+	PACKER_TEMPLATE_FILE=$(PACKER_TEMPLATE_FILE) \
+	PACKER_DEFAULT_VARIABLE_FILE=$(PACKER_DEFAULT_VARIABLE_FILE) \
+		hack/transform-al2-to-al2023.sh
+
 .PHONY: lint
 lint: ## Check the source files for syntax and format issues
 	$(SHFMT_COMMAND) $(SHFMT_FLAGS) --diff $(MAKEFILE_DIR)
@@ -102,23 +113,23 @@ k8s: validate ## Build default K8s version of EKS Optimized AL2 AMI
 
 .PHONY: 1.23
 1.23: ## Build EKS Optimized AL2 AMI - K8s 1.23
-	$(MAKE) k8s kubernetes_version=1.23.17 kubernetes_build_date=2023-05-11 pull_cni_from_github=true
+	$(MAKE) k8s kubernetes_version=1.23.17 kubernetes_build_date=2023-05-11
 
 .PHONY: 1.24
 1.24: ## Build EKS Optimized AL2 AMI - K8s 1.24
-	$(MAKE) k8s kubernetes_version=1.24.13 kubernetes_build_date=2023-05-11 pull_cni_from_github=true
+	$(MAKE) k8s kubernetes_version=1.24.13 kubernetes_build_date=2023-05-11
 
 .PHONY: 1.25
 1.25: ## Build EKS Optimized AL2 AMI - K8s 1.25
-	$(MAKE) k8s kubernetes_version=1.25.9 kubernetes_build_date=2023-05-11 pull_cni_from_github=true
+	$(MAKE) k8s kubernetes_version=1.25.9 kubernetes_build_date=2023-05-11
 
 .PHONY: 1.26
 1.26: ## Build EKS Optimized AL2 AMI - K8s 1.26
-	$(MAKE) k8s kubernetes_version=1.26.4 kubernetes_build_date=2023-05-11 pull_cni_from_github=true
+	$(MAKE) k8s kubernetes_version=1.26.4 kubernetes_build_date=2023-05-11
 
 .PHONY: 1.27
 1.27: ## Build EKS Optimized AL2 AMI - K8s 1.27
-	$(MAKE) k8s kubernetes_version=1.27.1 kubernetes_build_date=2023-04-19 pull_cni_from_github=true
+	$(MAKE) k8s kubernetes_version=1.27.1 kubernetes_build_date=2023-04-19
 	
 .PHONY: clean
 clean:
