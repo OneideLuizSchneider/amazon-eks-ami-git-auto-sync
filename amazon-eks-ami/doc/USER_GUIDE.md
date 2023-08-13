@@ -2,28 +2,16 @@
 
 This document includes details about using the AMI template and the resulting AMIs.
 
-1. [AMI template variables](#ami-template-variables)
-1. [Building against other versions of Kubernetes binaries](#building-against-other-versions-of-kubernetes-binaries)
-1. [Providing your own Kubernetes binaries](#providing-your-own-kubernetes-binaries)
-1. [Container image caching](#container-image-caching)
-1. [IAM permissions](#iam-permissions)
-1. [Customizing kubelet config](#customizing-kubelet-config)
-1. [AL2 and Linux kernel information](#al2-and-linux-kernel-information)
-1. [Updating known instance types](#updating-known-instance-types)
-1. [Version-locked packages](#version-locked-packages)
-1. [Image credential provider plugins](#image-credential-provider-plugins)
-1. [Ephemeral Storage](#ephemeral-storage)
-
 ---
 
 ## AMI template variables
 
-Default values for most variables are defined in [a default variable file](eks-worker-al2-variables.json).
+Default values for most variables are defined in [a default variable file](https://github.com/awslabs/amazon-eks-ami/blob/master/eks-worker-al2-variables.json).
 
 Users have the following options for specifying their own values:
 
 1. Provide a variable file with the `PACKER_VARIABLE_FILE` argument to `make`. Values in this file will override values in the default variable file. Your variable file does not need to include all possible variables, as it will be merged with the default variable file.
-2. Pass a key-value pair for any template variable to `make`. These values will override any values that were specified with the first method. In the table below, these variables have a default value of "None".
+2. Pass a key-value pair for any template variable to `make`. These values will override any values that were specified with the first method. In the table below, these variables have a default value of *None*.
 
 > **Note**
 > Some variables (such as `arch` and `kubernetes_version`) do not have a sensible, static default, and are satisfied by the Makefile.
@@ -34,45 +22,45 @@ Users have the following options for specifying their own values:
 | Variable | Default value | Description |
 | - | - | - |
 | `additional_yum_repos` | `""` |  |
-| `ami_component_description` | ```{{user `remote_folder`}}/worker``` |  |
-| `ami_description` | ```{{user `remote_folder`}}/worker``` |  |
-| `ami_name` | None |  |
+| `ami_component_description` | ```(k8s: {{ user `kubernetes_version` }}, docker: {{ user `docker_version` }}, containerd: {{ user `containerd_version` }})``` |  |
+| `ami_description` | ```EKS Kubernetes Worker AMI with AmazonLinux2 image``` |  |
+| `ami_name` | *None* |  |
 | `ami_regions` | `""` |  |
 | `ami_users` | `""` |  |
-| `arch` | None |  |
+| `arch` | *None* |  |
 | `associate_public_ip_address` | `""` |  |
-| `aws_access_key_id` | ```{{user `remote_folder`}}/worker``` |  |
-| `aws_region` | ```{{user `remote_folder`}}/worker``` |  |
-| `aws_secret_access_key` | ```{{user `remote_folder`}}/worker``` |  |
-| `aws_session_token` | ```{{user `remote_folder`}}/worker``` |  |
-| `binary_bucket_name` | ```{{user `remote_folder`}}/worker``` |  |
-| `binary_bucket_region` | ```{{user `remote_folder`}}/worker``` |  |
-| `cache_container_images` | ```{{user `remote_folder`}}/worker``` |  |
-| `cni_plugin_version` | ```{{user `remote_folder`}}/worker``` |  |
-| `containerd_version` | ```{{user `remote_folder`}}/worker``` |  |
-| `creator` | ```{{user `remote_folder`}}/worker``` |  |
-| `docker_version` | ```{{user `remote_folder`}}/worker``` |  |
-| `encrypted` | ```{{user `remote_folder`}}/worker``` |  |
-| `instance_type` | None |  |
+| `aws_access_key_id` | ```{{env `AWS_ACCESS_KEY_ID`}}``` |  |
+| `aws_region` | ```us-west-2``` |  |
+| `aws_secret_access_key` | ```{{env `AWS_SECRET_ACCESS_KEY`}}``` |  |
+| `aws_session_token` | ```{{env `AWS_SESSION_TOKEN`}}``` |  |
+| `binary_bucket_name` | ```amazon-eks``` |  |
+| `binary_bucket_region` | ```us-west-2``` |  |
+| `cache_container_images` | ```false``` |  |
+| `cni_plugin_version` | ```v1.2.0``` |  |
+| `containerd_version` | ```1.6.*``` |  |
+| `creator` | ```{{env `USER`}}``` |  |
+| `docker_version` | ```20.10.23-1.amzn2.0.1``` |  |
+| `encrypted` | ```false``` |  |
+| `instance_type` | *None* |  |
 | `kernel_version` | `""` |  |
 | `kms_key_id` | `""` |  |
-| `kubernetes_build_date` | None |  |
-| `kubernetes_version` | None |  |
-| `launch_block_device_mappings_volume_size` | ```{{user `remote_folder`}}/worker``` |  |
-| `pause_container_version` | ```{{user `remote_folder`}}/worker``` |  |
-| `pull_cni_from_github` | ```{{user `remote_folder`}}/worker``` |  |
-| `remote_folder` | ```{{user `remote_folder`}}/worker``` | Directory path for shell provisioner scripts on the builder instance |
-| `runc_version` | ```{{user `remote_folder`}}/worker``` |  |
+| `kubernetes_build_date` | *None* |  |
+| `kubernetes_version` | *None* |  |
+| `launch_block_device_mappings_volume_size` | ```4``` |  |
+| `pause_container_version` | ```3.5``` |  |
+| `pull_cni_from_github` | ```true``` |  |
+| `remote_folder` | ```/tmp``` | Directory path for shell provisioner scripts on the builder instance |
+| `runc_version` | ```1.1.5-1.amzn2``` |  |
 | `security_group_id` | `""` |  |
-| `source_ami_filter_name` | ```{{user `remote_folder`}}/worker``` |  |
+| `source_ami_filter_name` | ```amzn2-ami-minimal-hvm-*``` |  |
 | `source_ami_id` | `""` |  |
-| `source_ami_owners` | ```{{user `remote_folder`}}/worker``` |  |
+| `source_ami_owners` | ```137112412989``` |  |
 | `ssh_interface` | `""` |  |
-| `ssh_username` | ```{{user `remote_folder`}}/worker``` |  |
-| `ssm_agent_version` | ```{{user `remote_folder`}}/worker``` |  |
+| `ssh_username` | ```ec2-user``` |  |
+| `ssm_agent_version` | ```latest``` |  |
 | `subnet_id` | `""` |  |
 | `temporary_security_group_source_cidrs` | `""` |  |
-| `volume_type` | ```{{user `remote_folder`}}/worker``` |  |
+| `volume_type` | ```gp2``` |  |
 | `working_dir` | ```{{user `remote_folder`}}/worker``` | Directory path for ephemeral resources on the builder instance |
 <!-- template-variable-table-boundary -->
 
@@ -310,7 +298,7 @@ If `kernel_version` is not set:
 - For Kubernetes 1.23 and below, `5.4` is used.
 - For Kubernetes 1.24 and above, `5.10` is used.
 
-The [upgrade_kernel.sh script](../scripts/upgrade_kernel.sh) contains the logic for updating and upgrading the kernel.
+The [upgrade_kernel.sh script](https://github.com/awslabs/amazon-eks-ami/blob/master/scripts/upgrade_kernel.sh) contains the logic for updating and upgrading the kernel.
 
 ---
 
