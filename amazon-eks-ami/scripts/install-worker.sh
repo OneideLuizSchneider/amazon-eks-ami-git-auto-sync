@@ -52,6 +52,13 @@ fi
 ### Packages ###################################################################
 ################################################################################
 
+sudo yum install -y \
+  yum-utils \
+  yum-plugin-versionlock
+
+# lock the version of the kernel and associated packages before we yum update
+sudo yum versionlock kernel-$(uname -r) kernel-headers-$(uname -r) kernel-devel-$(uname -r)
+
 # Update the OS to begin with to catch up to the latest packages.
 sudo yum update -y
 
@@ -68,8 +75,6 @@ sudo yum install -y \
   socat \
   unzip \
   wget \
-  yum-utils \
-  yum-plugin-versionlock \
   mdadm \
   pigz
 
@@ -87,8 +92,6 @@ else
   # curl-minimal already exists in al2023 so install curl only on al2
   sudo yum install -y curl
 fi
-
-sudo yum versionlock kernel-$(uname -r) kernel-headers-$(uname -r) kernel-devel-$(uname -r)
 
 # Remove the ec2-net-utils package, if it's installed. This package interferes with the route setup on the instance.
 if yum list installed | grep ec2-net-utils; then sudo yum remove ec2-net-utils -y -q; fi
@@ -171,8 +174,15 @@ sudo mv $WORKING_DIR/pull-sandbox-image.sh /etc/eks/containerd/pull-sandbox-imag
 sudo mv $WORKING_DIR/pull-image.sh /etc/eks/containerd/pull-image.sh
 sudo chmod +x /etc/eks/containerd/pull-sandbox-image.sh
 sudo chmod +x /etc/eks/containerd/pull-image.sh
-
 sudo mkdir -p /etc/systemd/system/containerd.service.d
+CONFIGURE_CONTAINERD_SLICE=$(vercmp "$KUBERNETES_VERSION" gteq "1.24.0" || true)
+if [ "$CONFIGURE_CONTAINERD_SLICE" == "true" ]; then
+  cat << EOF | sudo tee /etc/systemd/system/containerd.service.d/00-runtime-slice.conf
+[Service]
+Slice=runtime.slice
+EOF
+fi
+
 cat << EOF | sudo tee /etc/systemd/system/containerd.service.d/10-compat-symlink.conf
 [Service]
 ExecStartPre=/bin/ln -sf /run/containerd/containerd.sock /run/dockershim.sock
@@ -472,7 +482,7 @@ if [[ "$CACHE_CONTAINER_IMAGES" == "true" ]] && ! [[ ${ISOLATED_REGIONS} =~ $BIN
       regional_img="${img/$ECR_URI/$region_uri}"
       sudo ctr -n k8s.io image tag "${img}" "${regional_img}" || :
       ## Tag ECR fips endpoint for supported regions
-      if [[ "${region}" =~ (us-east-1|us-east-2|us-west-1|us-west-2|us-gov-east-1|us-gov-east-2) ]]; then
+      if [[ "${region}" =~ (us-east-1|us-east-2|us-west-1|us-west-2|us-gov-east-1|us-gov-west-1) ]]; then
         regional_fips_img="${regional_img/.ecr./.ecr-fips.}"
         sudo ctr -n k8s.io image tag "${img}" "${regional_fips_img}" || :
         sudo ctr -n k8s.io image tag "${img}" "${regional_fips_img/-eksbuild.1/}" || :
