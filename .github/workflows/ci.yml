@@ -50,7 +50,7 @@ jobs:
           rm -rf ./new-amazon-eks-ami-master.zip 
           rm -rf ./amazon-eks-ami-master/.git
 
-          rsync -av ./amazon-eks-ami-master/ ./amazon-eks-ami/
+          rsync -av --delete ./amazon-eks-ami-master/ ./amazon-eks-ami/
           
           rm -rf ./amazon-eks-ami-master/
           
