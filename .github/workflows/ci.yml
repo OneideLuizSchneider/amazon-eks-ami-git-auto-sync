@@ -54,7 +54,7 @@ jobs:
 
           ls -l
           
-          mv ./new-amazon-eks-ami-master/ ./amazon-eks-ami/          
+          mv ./amazon-eks-ami-main/ ./amazon-eks-ami/          
           
           if [ -n "$(git status --porcelain)" ]; then
             echo "new_git_changes=yes" >> $GITHUB_ENV
