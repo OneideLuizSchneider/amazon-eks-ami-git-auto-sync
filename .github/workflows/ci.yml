@@ -50,8 +50,10 @@ jobs:
           rm -rf ./new-amazon-eks-ami-master.zip 
           rm -rf ./amazon-eks-ami-master/.git
 
-          rm -rf ./amazon-eks-ami
+          rm -rf ./amazon-eks-ami/
 
+          ls -l
+          
           mv ./new-amazon-eks-ami-master/ ./amazon-eks-ami/          
           
           if [ -n "$(git status --porcelain)" ]; then
