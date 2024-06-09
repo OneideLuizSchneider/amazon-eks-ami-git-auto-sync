@@ -44,11 +44,11 @@ jobs:
 
       - name: Apply new changes
         run: |
-          wget -O new-amazon-eks-ami-master.zip "https://github.com/awslabs/amazon-eks-ami/archive/refs/heads/master.zip"
-          unzip new-amazon-eks-ami-master.zip
+          wget -O new-amazon-eks-ami-main.zip "https://github.com/awslabs/amazon-eks-ami/archive/refs/heads/main.zip"
+          unzip new-amazon-eks-ami-main.zip
 
-          rm -rf ./new-amazon-eks-ami-master.zip 
-          rm -rf ./amazon-eks-ami-master/.git
+          rm -rf ./new-amazon-eks-ami-main.zip 
+          rm -rf ./amazon-eks-ami-main/.git
 
           rm -rf ./amazon-eks-ami/
 
