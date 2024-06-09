@@ -23,23 +23,24 @@ jobs:
 
       - id: get-sha
         run: |
-          echo ::set-output name=sha::$(git log -1 --pretty=format:"%H")
+          git_sha=$(git log -1 --pretty=format:"%H")
+          echo "git_commit_id=${git_sha}" >> $GITHUB_ENV  
       
-      - id: get-new-branch
+      - id: new-branch-name
         run: |
-          DATE_BRANCH=$(date +"%m-%d-%y")
-          echo ::set-output name=branch::$(echo feature/new-ami-release-${DATE_BRANCH})
+          BRANCH_NAME=feature/new-ami-release-$(date +"%m-%d-%y")-${{ env.git_commit_id }}
+          echo "new_branch_name=${BRANCH_NAME}" >> $GITHUB_ENV
 
       - name: Git new Branch
         run: |
           git fetch --all
-          exists=`git ls-remote --heads origin ${{ steps.get-new-branch.outputs.branch }};`
+          exists=`git ls-remote --heads origin ${{ env.new_branch_name }};`
           if [ -n "$exists" ]; then
-            echo "Branch ${{ steps.get-new-branch.outputs.branch }} Exists..."
-            git checkout --track origin/${{ steps.get-new-branch.outputs.branch }}          
+            echo "Branch ${{ env.new_branch_name }} Exists..."
+            git checkout --track origin/${{ env.new_branch_name }}          
           else
-            echo "Branch " + ${{ steps.get-new-branch.outputs.branch }} + " Does not Exists..."
-            git checkout -b ${{ steps.get-new-branch.outputs.branch }}            
+            echo "Branch " + ${{ env.new_branch_name }} + " Does not Exists..."
+            git checkout -b ${{ env.new_branch_name }}            
           fi
 
       - name: Apply new changes
@@ -49,13 +50,11 @@ jobs:
 
           rm -rf ./new-amazon-eks-ami-main.zip 
           rm -rf ./amazon-eks-ami-main/.git
+          rm -rf ./amazon-eks-ami-main/.github
 
           rm -rf ./amazon-eks-ami/
+          mv ./amazon-eks-ami-main/ ./amazon-eks-ami/
 
-          ls -l
-          
-          mv ./amazon-eks-ami-main/ ./amazon-eks-ami/          
-          
           if [ -n "$(git status --porcelain)" ]; then
             echo "new_git_changes=yes" >> $GITHUB_ENV
           else
