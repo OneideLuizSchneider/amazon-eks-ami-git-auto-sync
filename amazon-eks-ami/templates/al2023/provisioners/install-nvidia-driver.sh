@@ -7,22 +7,63 @@ set -o errexit
 if [ "$ENABLE_ACCELERATOR" != "nvidia" ]; then
   exit 0
 fi
+
+#Detect Isolated partitions
+function is-isolated-partition() {
+  PARTITION=$(imds /latest/meta-data/services/partition)
+  NON_ISOLATED_PARTITIONS=("aws" "aws-cn" "aws-us-gov")
+  for NON_ISOLATED_PARTITION in "${NON_ISOLATED_PARTITIONS[@]}"; do
+    if [ "${NON_ISOLATED_PARTITION}" = "${PARTITION}" ]; then
+      return 1
+    fi
+  done
+  return 0
+}
+
+function rpm_install() {
+  local RPMS=($@)
+  echo "Pulling and installing local rpms from s3 bucket"
+  for RPM in "${RPMS[@]}"; do
+    aws s3 cp --region ${BINARY_BUCKET_REGION} s3://${BINARY_BUCKET_NAME}/rpms/${RPM} ${WORKING_DIR}/${RPM}
+    sudo dnf localinstall -y ${WORKING_DIR}/${RPM}
+  done
+}
+
+function install-nvidia-container-toolkit() {
+  # The order of these RPMs is important, as they have dependencies on each other
+  RPMS=("libnvidia-container1-1.16.2-1.x86_64.rpm" "nvidia-container-toolkit-base-1.16.2-1.x86_64.rpm" "libnvidia-container-tools-1.16.2-1.x86_64.rpm" "nvidia-container-toolkit-1.16.2-1.x86_64.rpm")
+  for RPM in "${RPMS[@]}"; do
+    echo "pulling and installing rpms: (${RPM}) from s3 bucket: (${BINARY_BUCKET_NAME}) in region: (${BINARY_BUCKET_REGION})"
+    aws s3 cp --region ${BINARY_BUCKET_REGION} s3://${BINARY_BUCKET_NAME}/rpms/${RPM} ${WORKING_DIR}/${RPM}
+    echo "installing rpm: ${WORKING_DIR}/${RPM}"
+    sudo rpm -ivh ${WORKING_DIR}/${RPM}
+  done
+}
+
 echo "Installing NVIDIA ${NVIDIA_DRIVER_MAJOR_VERSION} drivers..."
 
 ################################################################################
 ### Add repository #############################################################
 ################################################################################
 # Determine the domain based on the region
-if [[ $AWS_REGION == cn-* ]]; then
-  DOMAIN="nvidia.cn"
+if is-isolated-partition; then
+  aws s3 cp --region ${BINARY_BUCKET_REGION} s3://${BINARY_BUCKET_NAME}/amzn2023-nvidia.repo ${WORKING_DIR}/amzn2023-nvidia.repo
+
+  sudo dnf config-manager --add-repo ${WORKING_DIR}/amzn2023-nvidia.repo
+  rpm_install "opencl-filesystem-1.0-5.el7.noarch.rpm" "ocl-icd-2.2.12-1.el7.x86_64.rpm"
+
 else
-  DOMAIN="nvidia.com"
+  if [[ $AWS_REGION == cn-* ]]; then
+    DOMAIN="nvidia.cn"
+  else
+    DOMAIN="nvidia.com"
+  fi
+
+  sudo dnf config-manager --add-repo https://developer.download.${DOMAIN}/compute/cuda/repos/amzn2023/x86_64/cuda-amzn2023.repo
+  sudo dnf config-manager --add-repo https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+
+  sudo sed -i 's/gpgcheck=0/gpgcheck=1/g' /etc/yum.repos.d/nvidia-container-toolkit.repo /etc/yum.repos.d/cuda-amzn2023.repo
 fi
-
-sudo dnf config-manager --add-repo https://developer.download.${DOMAIN}/compute/cuda/repos/amzn2023/x86_64/cuda-amzn2023.repo
-sudo dnf config-manager --add-repo https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
-
-sudo sed -i 's/gpgcheck=0/gpgcheck=1/g' /etc/yum.repos.d/nvidia-container-toolkit.repo /etc/yum.repos.d/cuda-amzn2023.repo
 
 ################################################################################
 ### Install drivers ############################################################
@@ -76,7 +117,14 @@ sudo systemctl enable set-nvidia-clocks.service
 ################################################################################
 ### Install other dependencies #################################################
 ################################################################################
-sudo dnf -y install nvidia-fabric-manager nvidia-container-toolkit
+sudo dnf -y install nvidia-fabric-manager
+
+# NVIDIA Container toolkit needs to be locally installed for isolated partitions
+if is-isolated-partition; then
+  install-nvidia-container-toolkit
+else
+  sudo dnf -y install nvidia-container-toolkit
+fi
 
 sudo systemctl enable nvidia-fabricmanager
 sudo systemctl enable nvidia-persistenced
