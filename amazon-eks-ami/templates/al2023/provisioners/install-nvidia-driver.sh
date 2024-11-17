@@ -31,7 +31,7 @@ function rpm_install() {
 
 function install-nvidia-container-toolkit() {
   # The order of these RPMs is important, as they have dependencies on each other
-  RPMS=("libnvidia-container1-1.16.2-1.x86_64.rpm" "nvidia-container-toolkit-base-1.16.2-1.x86_64.rpm" "libnvidia-container-tools-1.16.2-1.x86_64.rpm" "nvidia-container-toolkit-1.16.2-1.x86_64.rpm")
+  RPMS=("libnvidia-container1-1.17.1-1.x86_64.rpm" "nvidia-container-toolkit-base-1.17.1-1.x86_64.rpm" "libnvidia-container-tools-1.17.1-1.x86_64.rpm" "nvidia-container-toolkit-1.17.1-1.x86_64.rpm")
   for RPM in "${RPMS[@]}"; do
     echo "pulling and installing rpms: (${RPM}) from s3 bucket: (${BINARY_BUCKET_NAME}) in region: (${BINARY_BUCKET_REGION})"
     aws s3 cp --region ${BINARY_BUCKET_REGION} s3://${BINARY_BUCKET_NAME}/rpms/${RPM} ${WORKING_DIR}/${RPM}
@@ -77,7 +77,7 @@ sudo dnf -y install kernel-modules-extra.x86_64
 
 function archive-open-kmods() {
   if is-isolated-partition; then
-    sudo dnf -y install kmod-nvidia-open-dkms-${NVIDIA_DRIVER_MAJOR_VERSION}.*
+    sudo dnf -y install "kmod-nvidia-open-dkms-${NVIDIA_DRIVER_MAJOR_VERSION}.*"
   else
     sudo dnf -y module install nvidia-driver:${NVIDIA_DRIVER_MAJOR_VERSION}-open
   fi
@@ -103,7 +103,7 @@ function archive-open-kmods() {
 
 function archive-proprietary-kmod() {
   if is-isolated-partition; then
-    sudo dnf -y install kmod-nvidia-latest-dkms-${NVIDIA_DRIVER_MAJOR_VERSION}.*
+    sudo dnf -y install "kmod-nvidia-latest-dkms-${NVIDIA_DRIVER_MAJOR_VERSION}.*"
   else
     sudo dnf -y module install nvidia-driver:${NVIDIA_DRIVER_MAJOR_VERSION}-dkms
   fi
@@ -119,7 +119,6 @@ archive-proprietary-kmod
 ################################################################################
 
 sudo mv ${WORKING_DIR}/gpu/nvidia-kmod-load.sh /etc/eks/
-sudo mv ${WORKING_DIR}/gpu/set-nvidia-clocks.sh /etc/eks/
 sudo mv ${WORKING_DIR}/gpu/nvidia-kmod-load.service /etc/systemd/system/nvidia-kmod-load.service
 sudo mv ${WORKING_DIR}/gpu/set-nvidia-clocks.service /etc/systemd/system/set-nvidia-clocks.service
 sudo systemctl daemon-reload
