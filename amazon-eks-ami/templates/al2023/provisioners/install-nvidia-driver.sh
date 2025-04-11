@@ -53,7 +53,11 @@ else
   else
     sudo dnf config-manager --add-repo https://developer.download.${DOMAIN}/compute/cuda/repos/amzn2023/$(uname -m)/cuda-amzn2023.repo
   fi
-  sudo dnf config-manager --add-repo https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+
+  if [[ $AWS_REGION != cn-* ]]; then
+    sudo dnf config-manager --add-repo https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+  fi
+
   # update all current .repo sources to enable gpgcheck
   sudo dnf config-manager --save --setopt=*.gpgcheck=1
 fi
@@ -66,7 +70,11 @@ sudo mv ${WORKING_DIR}/gpu/kmod-util /usr/bin/
 
 sudo mkdir -p /etc/dkms
 echo "MAKE[0]=\"'make' -j$(grep -c processor /proc/cpuinfo) module\"" | sudo tee /etc/dkms/nvidia.conf
-sudo dnf -y install kernel-modules-extra
+sudo dnf -y install \
+  kernel-devel-$(uname -r) \
+  kernel-headers-$(uname -r) \
+  kernel-modules-extra-$(uname -r) \
+  kernel-modules-extra-common-$(uname -r)
 
 function archive-open-kmods() {
   if is-isolated-partition; then
