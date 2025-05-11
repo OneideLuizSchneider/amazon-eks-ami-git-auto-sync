@@ -3,6 +3,7 @@ package containerd
 import (
 	"bytes"
 	_ "embed"
+	"strings"
 	"text/template"
 
 	"github.com/awslabs/amazon-eks-ami/nodeadm/internal/api"
@@ -22,7 +23,8 @@ const (
 var (
 	//go:embed config.template.toml
 	containerdConfigTemplateData string
-	containerdConfigTemplate     = template.Must(template.New(containerdConfigFile).Parse(containerdConfigTemplateData))
+	//go:embed config2.template.toml
+	containerdConfigTemplateData2 string
 )
 
 type containerdTemplateVars struct {
@@ -32,11 +34,19 @@ type containerdTemplateVars struct {
 	RuntimeBinaryName string
 }
 
-func writeContainerdConfig(cfg *api.NodeConfig) error {
-	if err := writeBaseRuntimeSpec(cfg); err != nil {
-		return err
+func getContainerdConfigTemplate() (*template.Template, error) {
+	version, err := GetContainerdVersion()
+	if err != nil {
+		return &template.Template{}, err
 	}
+	// if version is like 2.x.x, use config2.template.toml
+	if strings.HasPrefix(version, "2.") {
+		return template.Must(template.New(containerdConfigFile).Parse(containerdConfigTemplateData2)), nil
+	}
+	return template.Must(template.New(containerdConfigFile).Parse(containerdConfigTemplateData)), nil
+}
 
+func writeContainerdConfig(cfg *api.NodeConfig) error {
 	containerdConfig, err := generateContainerdConfig(cfg)
 	if err != nil {
 		return err
@@ -61,15 +71,19 @@ func writeContainerdConfig(cfg *api.NodeConfig) error {
 }
 
 func generateContainerdConfig(cfg *api.NodeConfig) ([]byte, error) {
-	instanceOptions := applyInstanceTypeMixins(cfg.Status.Instance.Type)
+	runtimeOptions := getRuntimeOptions(cfg)
 
 	configVars := containerdTemplateVars{
 		SandboxImage:      cfg.Status.Defaults.SandboxImage,
-		RuntimeBinaryName: instanceOptions.RuntimeBinaryName,
-		RuntimeName:       instanceOptions.RuntimeName,
+		RuntimeBinaryName: runtimeOptions.RuntimeBinaryPath,
+		RuntimeName:       runtimeOptions.RuntimeName,
 		EnableCDI:         semver.Compare(cfg.Status.KubeletVersion, "v1.32.0") >= 0,
 	}
 	var buf bytes.Buffer
+	containerdConfigTemplate, err := getContainerdConfigTemplate()
+	if err != nil {
+		return nil, err
+	}
 	if err := containerdConfigTemplate.Execute(&buf, configVars); err != nil {
 		return nil, err
 	}
