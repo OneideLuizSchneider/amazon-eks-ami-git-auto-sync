@@ -31,32 +31,30 @@ function rpm_install() {
 
 echo "Installing NVIDIA ${NVIDIA_DRIVER_MAJOR_VERSION} drivers..."
 
-# install and lock DKMS at the version provided by Amazon Linux
-# necessary because NVIDIA has pushed their own (newer) DKMS package to their repo
-sudo dnf install -y dkms
-sudo dnf versionlock dkms
-
 ################################################################################
 ### Add repository #############################################################
 ################################################################################
-# Determine the domain based on the region
-if is-isolated-partition; then
-  sudo dnf install -y nvidia-release
-  sudo sed -i 's/$dualstack//g' /etc/yum.repos.d/amazonlinux-nvidia.repo
-
-  rpm_install "opencl-filesystem-1.0-5.el7.noarch.rpm" "ocl-icd-2.2.12-1.el7.x86_64.rpm"
-
-else
+function get_cuda_al2023_x86_repo() {
   if [[ $AWS_REGION == cn-* ]]; then
     DOMAIN="nvidia.cn"
   else
     DOMAIN="nvidia.com"
   fi
 
+  echo "https://developer.download.${DOMAIN}/compute/cuda/repos/amzn2023/x86_64/cuda-amzn2023.repo"
+}
+
+# Determine the domain based on the region
+if is-isolated-partition; then
+  sudo dnf install -y nvidia-release
+  sudo sed -i 's/$dualstack//g' /etc/yum.repos.d/amazonlinux-nvidia.repo
+
+  rpm_install "opencl-filesystem-1.0-5.el7.noarch.rpm" "ocl-icd-2.2.12-1.el7.x86_64.rpm"
+else
   if [ -n "${NVIDIA_REPOSITORY:-}" ]; then
     sudo dnf config-manager --add-repo ${NVIDIA_REPOSITORY}
   else
-    sudo dnf config-manager --add-repo https://developer.download.${DOMAIN}/compute/cuda/repos/amzn2023/$(uname -m)/cuda-amzn2023.repo
+    sudo dnf config-manager --add-repo $(get_cuda_al2023_x86_repo)
   fi
 
   # update all current .repo sources to enable gpgcheck
@@ -83,6 +81,24 @@ sudo dnf -y install \
   kernel-headers-$(uname -r) \
   kernel-modules-extra-common-$(uname -r)
 
+# Install dkms dependency from amazonlinux repo
+sudo dnf -y install patch
+
+if is-isolated-partition; then
+  sudo dnf -y install dkms
+else
+  # Install dkms from the cuda repo
+  if [[ "$(uname -m)" == "x86_64" ]]; then
+    sudo dnf -y --disablerepo="*" --enablerepo="cuda*" install dkms
+  else
+    sudo dnf -y remove dkms
+    sudo dnf config-manager --add-repo $(get_cuda_al2023_x86_repo)
+    sudo dnf -y --disablerepo="*" --enablerepo="cuda*" install dkms
+    sudo dnf config-manager --set-disabled cuda-amzn2023-x86_64
+    sudo rm /etc/yum.repos.d/cuda-amzn2023.repo
+  fi
+fi
+
 function archive-open-kmods() {
   echo "Archiving open kmods"
   if is-isolated-partition; then
@@ -94,8 +110,16 @@ function archive-open-kmods() {
   ls -la /var/lib/dkms/
   # The DKMS package name differs between the RPM and the dkms.conf in the OSS kmod sources
   # TODO: can be removed if this is merged: https://github.com/NVIDIA/open-gpu-kernel-modules/pull/567
-  NVIDIA_OPEN_VERSION=$(kmod-util module-version nvidia-open)
-  sudo sed -i 's/PACKAGE_NAME="nvidia"/PACKAGE_NAME="nvidia-open"/g' /var/lib/dkms/nvidia-open/$NVIDIA_OPEN_VERSION/source/dkms.conf
+
+  # The open kernel module name changed from nvidia-open to nvidia in 570.148.08
+  # Remove and re-add dkms module with the correct name. This maintains the current install and archive behavior
+  NVIDIA_OPEN_VERSION=$(kmod-util module-version nvidia)
+  sudo dkms remove "nvidia/$NVIDIA_OPEN_VERSION" --all
+  sudo sed -i 's/PACKAGE_NAME="nvidia"/PACKAGE_NAME="nvidia-open"/' /usr/src/nvidia-$NVIDIA_OPEN_VERSION/dkms.conf
+  sudo mv /usr/src/nvidia-$NVIDIA_OPEN_VERSION /usr/src/nvidia-open-$NVIDIA_OPEN_VERSION
+  sudo dkms add -m nvidia-open -v $NVIDIA_OPEN_VERSION
+  sudo dkms build -m nvidia-open -v $NVIDIA_OPEN_VERSION
+  sudo dkms install -m nvidia-open -v $NVIDIA_OPEN_VERSION
 
   sudo kmod-util archive nvidia-open
 
