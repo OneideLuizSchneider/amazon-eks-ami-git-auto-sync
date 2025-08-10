@@ -149,8 +149,27 @@ sudo yum install -y runc-${RUNC_VERSION}
 sudo yum versionlock runc-*
 
 # install containerd and lock version
-sudo yum install -y containerd-${CONTAINERD_VERSION}
-sudo yum versionlock containerd-*
+if [[ "$INSTALL_CONTAINERD_FROM_S3" == "true" ]]; then
+  CONTAINERD_BINARIES=(
+    containerd
+    containerd-shim-runc-v2
+    ctr
+  )
+  echo "Installing containerd from S3..."
+  for binary in "${CONTAINERD_BINARIES[@]}"; do
+    aws s3 cp --region ${BINARY_BUCKET_REGION} s3://${BINARY_BUCKET_NAME}/containerd/${CONTAINERD_VERSION}/${MACHINE}/${binary} .
+    sudo chmod +x $binary
+    sudo mv $binary /usr/bin/
+  done
+  sudo mkdir -p /var/lib/containerd
+  sudo mv $WORKING_DIR/containerd.service /etc/systemd/system/containerd.service
+  sudo chown root:root /etc/systemd/system/containerd.service
+  # exclude containerd from yum.conf as versionlock doesn't work in this case
+  echo "exclude=containerd*,docker*" | sudo tee -a /etc/yum.conf
+else
+  sudo yum install -y containerd-${CONTAINERD_VERSION}
+  sudo yum versionlock containerd-*
+fi
 
 # install cri-tools for crictl, needed to interact with containerd's CRI server
 sudo yum install -y cri-tools
@@ -161,7 +180,11 @@ if [ -f "/etc/eks/containerd/containerd-config.toml" ]; then
   ## this means we are building a gpu ami and have already placed a containerd configuration file in /etc/eks
   echo "containerd config is already present"
 else
-  sudo mv $WORKING_DIR/containerd-config.toml /etc/eks/containerd/containerd-config.toml
+  if [[ "${CONTAINERD_VERSION}" == 2.* ]]; then
+    sudo mv $WORKING_DIR/containerd-config2.toml /etc/eks/containerd/containerd-config.toml
+  else
+    sudo mv $WORKING_DIR/containerd-config.toml /etc/eks/containerd/containerd-config.toml
+  fi
 fi
 
 sudo mv $WORKING_DIR/kubelet-containerd.service /etc/eks/containerd/kubelet-containerd.service
@@ -334,13 +357,6 @@ sudo mkdir -p /etc/kubernetes/kubelet
 sudo mkdir -p /etc/systemd/system/kubelet.service.d
 sudo mv $WORKING_DIR/kubelet-kubeconfig /var/lib/kubelet/kubeconfig
 sudo chown root:root /var/lib/kubelet/kubeconfig
-
-# Inject CSIServiceAccountToken feature gate to kubelet config if kubernetes version starts with 1.20.
-# This is only injected for 1.20 since CSIServiceAccountToken will be moved to beta starting 1.21.
-if [[ $KUBERNETES_VERSION == "1.20"* ]]; then
-  KUBELET_CONFIG_WITH_CSI_SERVICE_ACCOUNT_TOKEN_ENABLED=$(cat $WORKING_DIR/kubelet-config.json | jq '.featureGates += {CSIServiceAccountToken: true}')
-  echo $KUBELET_CONFIG_WITH_CSI_SERVICE_ACCOUNT_TOKEN_ENABLED > $WORKING_DIR/kubelet-config.json
-fi
 
 # Enable Feature Gate for KubeletCredentialProviders in versions less than 1.28 since this feature flag was removed in 1.28.
 # TODO: Remove this during 1.27 EOL

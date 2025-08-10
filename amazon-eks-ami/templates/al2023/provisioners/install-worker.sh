@@ -66,6 +66,19 @@ sudo dnf install -y \
   pigz \
   python3-dnf-plugin-versionlock
 
+# we need to handle different kernel packages depending on the namespace
+# associated with the minor version.
+KERNEL_PACKAGE="kernel"
+if [[ "$(uname -r)" == 6.12.* ]]; then
+  KERNEL_PACKAGE="kernel6.12"
+fi
+sudo dnf -y install \
+  "${KERNEL_PACKAGE}-devel" \
+  "${KERNEL_PACKAGE}-headers"
+
+# versionlock kernel packages so they remain consistent.
+sudo dnf versionlock 'kernel*'
+
 ################################################################################
 ### Networking #################################################################
 ################################################################################
@@ -133,10 +146,29 @@ fi
 ###############################################################################
 ### Containerd setup ##########################################################
 ###############################################################################
-
 sudo dnf install -y runc-${RUNC_VERSION}
-sudo dnf install -y containerd-${CONTAINERD_VERSION}
-sudo dnf versionlock containerd-*
+if [[ "$INSTALL_CONTAINERD_FROM_S3" == "true" ]]; then
+  CONTAINERD_BINARIES=(
+    containerd
+    containerd-shim-runc-v2
+    ctr
+  )
+  for binary in "${CONTAINERD_BINARIES[@]}"; do
+    echo "Installing containerd from S3..."
+    aws s3 cp --region ${BINARY_BUCKET_REGION} s3://${BINARY_BUCKET_NAME}/containerd/${CONTAINERD_VERSION}/${MACHINE}/${binary} .
+    sudo chmod +x $binary
+    sudo mv $binary /usr/bin/
+    # exclude containerd from yum.conf as versionlock doesn't work in this case
+    echo "exclude=containerd*" | sudo tee -a /etc/dnf/dnf.conf
+  done
+  sudo mkdir -p /var/lib/containerd
+else
+  sudo dnf install -y containerd-${CONTAINERD_VERSION}
+  sudo dnf versionlock containerd-*
+fi
+
+# generate and store containerd version in file /etc/eks/containerd-version.txt
+containerd --version | sudo tee /etc/eks/containerd-version.txt
 
 sudo systemctl enable ebs-initialize-bin@containerd
 
