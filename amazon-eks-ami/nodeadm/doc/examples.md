@@ -62,7 +62,7 @@ spec:
 The configuration objects will be merged in the order they appear in the MIME multi-part document, meaning the value in the lattermost configuration object will take precedence.
 
 ---
-## Using instance ID as node name (experimental)
+## Using instance ID as node name
 
 When the `InstanceIdNodeName` feature gate is enabled, `nodeadm` will use the EC2 instance's ID (e.g. `i-abcdefg1234`) as the name of the `Node` object created by `kubelet`, instead of the EC2 instance's private DNS Name (e.g. `ip-192-168-1-1.ec2.internal`).
 There are several benefits of doing this:
@@ -89,6 +89,28 @@ kind: NodeConfig
 spec:
   featureGates:
     InstanceIdNodeName: true
+```
+
+---
+## Enabling aggressive image pull (experimental)
+
+When the `AggressiveImagePull` feature gate is enabled, `nodeadm` will configure the container runtime to pull and unpack container images in parallel.
+
+This has the benefit of potentially decreasing image pull time, at the cost of increased CPU and memory usage during image pull.
+
+⚠️ **Note**: This flag will be ignored on instance sizes below a certain vCPU and memory threshold.
+
+### To enable this feature:
+1. Ensure your instance type is a larger instance type. Currently we recommend a 2xlarge instance or larger, but that value may change.
+2. Make sure your workloads can tolerate the increased CPU and memory usage during image pull. This makes the most sense when you need to pull a very large container image early in a node's lifecycle, before other workloads are running.
+3. Enable the feature gate in your user data:
+```
+---
+apiVersion: node.eks.aws/v1alpha1
+kind: NodeConfig
+spec:
+  featureGates:
+    AggressiveImagePull: true
 ```
 
 ---
