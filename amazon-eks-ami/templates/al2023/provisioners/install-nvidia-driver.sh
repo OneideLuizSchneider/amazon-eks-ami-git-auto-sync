@@ -8,16 +8,8 @@ if [ "$ENABLE_ACCELERATOR" != "nvidia" ]; then
   exit 0
 fi
 
-#Detect Isolated partitions
 function is-isolated-partition() {
-  PARTITION=$(imds /latest/meta-data/services/partition)
-  NON_ISOLATED_PARTITIONS=("aws" "aws-cn" "aws-us-gov")
-  for NON_ISOLATED_PARTITION in "${NON_ISOLATED_PARTITIONS[@]}"; do
-    if [ "${NON_ISOLATED_PARTITION}" = "${PARTITION}" ]; then
-      return 1
-    fi
-  done
-  return 0
+  [[ $(imds /latest/meta-data/services/partition) =~ ^aws-iso ]]
 }
 
 function rpm_install() {
@@ -206,14 +198,14 @@ sudo systemctl enable set-nvidia-clocks.service
 ################################################################################
 ### Install other dependencies #################################################
 ################################################################################
-sudo dnf -y install nvidia-fabric-manager
+sudo dnf -y install "nvidia-fabric-manager-${NVIDIA_DRIVER_MAJOR_VERSION}.*"
 sudo dnf -y install "nvidia-imex-${NVIDIA_DRIVER_MAJOR_VERSION}.*"
 
 # NVIDIA Container toolkit needs to be locally installed for isolated partitions, also install NVIDIA-Persistenced
 if is-isolated-partition; then
   sudo dnf -y install nvidia-container-toolkit
   sudo dnf -y install "nvidia-persistenced-${NVIDIA_DRIVER_MAJOR_VERSION}.*"
-  sudo dnf -y install "nvidia-driver"
+  sudo dnf -y install "nvidia-driver-cuda-${NVIDIA_DRIVER_MAJOR_VERSION}.*"
 else
   sudo dnf -y install nvidia-container-toolkit
 fi
