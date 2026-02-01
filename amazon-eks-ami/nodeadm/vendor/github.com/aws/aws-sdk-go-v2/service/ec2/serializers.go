@@ -54478,6 +54478,11 @@ func awsEc2query_serializeDocumentEbsBlockDevice(v *types.EbsBlockDevice, value 
 		objectKey.Boolean(*v.DeleteOnTermination)
 	}
 
+	if v.EbsCardIndex != nil {
+		objectKey := object.Key("EbsCardIndex")
+		objectKey.Integer(*v.EbsCardIndex)
+	}
+
 	if v.Encrypted != nil {
 		objectKey := object.Key("Encrypted")
 		objectKey.Boolean(*v.Encrypted)
@@ -57553,6 +57558,11 @@ func awsEc2query_serializeDocumentLaunchTemplateEbsBlockDeviceRequest(v *types.L
 	if v.DeleteOnTermination != nil {
 		objectKey := object.Key("DeleteOnTermination")
 		objectKey.Boolean(*v.DeleteOnTermination)
+	}
+
+	if v.EbsCardIndex != nil {
+		objectKey := object.Key("EbsCardIndex")
+		objectKey.Integer(*v.EbsCardIndex)
 	}
 
 	if v.Encrypted != nil {
@@ -65212,6 +65222,11 @@ func awsEc2query_serializeOpDocumentAttachVolumeInput(v *AttachVolumeInput, valu
 		objectKey.Boolean(*v.DryRun)
 	}
 
+	if v.EbsCardIndex != nil {
+		objectKey := object.Key("EbsCardIndex")
+		objectKey.Integer(*v.EbsCardIndex)
+	}
+
 	if v.InstanceId != nil {
 		objectKey := object.Key("InstanceId")
 		objectKey.String(*v.InstanceId)
@@ -68299,6 +68314,11 @@ func awsEc2query_serializeOpDocumentCreatePlacementGroupInput(v *CreatePlacement
 	if v.GroupName != nil {
 		objectKey := object.Key("GroupName")
 		objectKey.String(*v.GroupName)
+	}
+
+	if v.LinkedGroupId != nil {
+		objectKey := object.Key("LinkedGroupId")
+		objectKey.String(*v.LinkedGroupId)
 	}
 
 	if v.PartitionCount != nil {
